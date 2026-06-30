@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Attendance App",
+    "slug": "attendance-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#4338CA"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.northwindlabs.attendance"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#4338CA"
+      },
+      "package": "com.northwindlabs.attendance"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}

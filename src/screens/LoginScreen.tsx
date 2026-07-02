@@ -57,11 +57,7 @@ export default function LoginScreen() {
         style={styles.hero}
         start={{ x: 0.2, y: 0 }}
         end={{ x: 0.9, y: 1 }}
-      >
-        <View style={styles.circleA} />
-        <View style={styles.circleB} />
-        <View style={styles.circleC} />
-      </LinearGradient>
+      />
 
       {/* ── White card ── */}
       <View style={[styles.card, { paddingBottom: insets.bottom + 28 }]}>
@@ -103,18 +99,6 @@ const styles = StyleSheet.create({
 
   /* Hero */
   hero: { height: HERO_H, overflow: 'hidden' },
-  circleA: {
-    position: 'absolute', width: 340, height: 340, borderRadius: 170,
-    backgroundColor: 'rgba(255,255,255,0.07)', top: -90, right: -70,
-  },
-  circleB: {
-    position: 'absolute', width: 220, height: 220, borderRadius: 110,
-    backgroundColor: 'rgba(255,255,255,0.05)', bottom: 30, left: -70,
-  },
-  circleC: {
-    position: 'absolute', width: 110, height: 110, borderRadius: 55,
-    backgroundColor: 'rgba(255,255,255,0.06)', top: 130, left: 50,
-  },
 
   /* Card */
   card: {

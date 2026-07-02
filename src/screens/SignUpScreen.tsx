@@ -66,9 +66,6 @@ export default function SignUpScreen() {
         start={{ x: 0.2, y: 0 }}
         end={{ x: 0.9, y: 1 }}
       >
-        <View style={styles.circleA} />
-        <View style={styles.circleB} />
-
         <View style={styles.heroCenter}>
           <Text style={styles.heroTitle}>Complete your profile</Text>
         </View>
@@ -147,14 +144,6 @@ const styles = StyleSheet.create({
 
   /* Hero */
   hero: { height: HERO_H, overflow: 'hidden', paddingHorizontal: 24 },
-  circleA: {
-    position: 'absolute', width: 260, height: 260, borderRadius: 130,
-    backgroundColor: 'rgba(255,255,255,0.06)', top: -80, right: -40,
-  },
-  circleB: {
-    position: 'absolute', width: 160, height: 160, borderRadius: 80,
-    backgroundColor: 'rgba(255,255,255,0.05)', bottom: 20, left: -40,
-  },
   heroCenter: {
     flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 64,
   },

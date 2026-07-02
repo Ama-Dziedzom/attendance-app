@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { isLateClockIn } from '../config/attendance';
 
 function todayDate() {
   return new Date().toISOString().split('T')[0]; // YYYY-MM-DD
@@ -15,6 +16,7 @@ export interface EmployeeRecord {
 
 export interface AttendanceRecord {
   id: string;
+  date: string;
   clock_in_time: string;
   clock_out_time: string | null;
   status: string;
@@ -53,7 +55,7 @@ export async function fetchTodayAttendance(
 ): Promise<AttendanceRecord | null> {
   const { data } = await supabase
     .from('attendance_records')
-    .select('id, clock_in_time, clock_out_time, status, total_hours')
+    .select('id, date, clock_in_time, clock_out_time, status, total_hours')
     .eq('employee_id', employeeId)
     .eq('date', todayDate())
     .maybeSingle();
@@ -72,15 +74,18 @@ export async function clockInEmployee(
   const existing = await fetchTodayAttendance(employeeId);
   if (existing?.clock_in_time) return existing;
 
+  const clockInTime = new Date().toISOString();
+
   const { data, error } = await supabase
     .from('attendance_records')
     .insert({
       employee_id: employeeId,
       date: todayDate(),
-      clock_in_time: new Date().toISOString(),
+      clock_in_time: clockInTime,
+      status: isLateClockIn(clockInTime) ? 'late' : 'present',
       verification_method: 'manual',
     })
-    .select('id, clock_in_time, clock_out_time, status, total_hours')
+    .select('id, date, clock_in_time, clock_out_time, status, total_hours')
     .single();
 
   if (error) throw new Error(error.message);
@@ -97,7 +102,7 @@ export async function clockOutEmployee(
     .eq('employee_id', employeeId)
     .eq('date', todayDate())
     .is('clock_out_time', null)
-    .select('id, clock_in_time, clock_out_time, status, total_hours')
+    .select('id, date, clock_in_time, clock_out_time, status, total_hours')
     .maybeSingle();
 
   if (error) throw new Error(error.message);
@@ -178,7 +183,7 @@ export async function fetchAttendanceHistory(
 ): Promise<AttendanceRecord[]> {
   const { data } = await supabase
     .from('attendance_records')
-    .select('id, clock_in_time, clock_out_time, status, total_hours')
+    .select('id, date, clock_in_time, clock_out_time, status, total_hours')
     .eq('employee_id', employeeId)
     .order('date', { ascending: false })
     .limit(limit);

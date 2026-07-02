@@ -41,9 +41,9 @@ export async function runAutoClockOutCheck(user: UserProfile): Promise<boolean> 
     ? await fetchAgencyAllowedSubnets(user.agencyId).catch(() => [] as string[])
     : [];
 
-  const { isOnCompanyNetwork } = await checkCompanyNetwork(allowedSubnets);
+  const networkStatus = await checkCompanyNetwork(allowedSubnets);
 
-  if (isOnCompanyNetwork) {
+  if (networkStatus === 'allowed') {
     // Back on network — reset the off-network timer
     await AsyncStorage.removeItem(OFF_NETWORK_KEY);
     return false;

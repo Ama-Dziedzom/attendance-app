@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { Location01Icon, Logout01Icon, QrCode01Icon } from '@hugeicons/core-free-icons';
@@ -8,20 +8,15 @@ import { useNavigation, CompositeNavigationProp } from '@react-navigation/native
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useApp } from '../context/AppContext';
-import { clockOutEmployee } from '../services/attendanceService';
+import { clockOutEmployee, fetchAttendanceHistory, AttendanceRecord } from '../services/attendanceService';
 import { RootStackParamList, MainTabParamList } from '../navigation/AppNavigator';
 import { COLORS } from '../constants/colors';
+import { toDisplayRecord, startOfWeek, isOnOrAfter, sumHours, onTimeRate } from '../utils/attendanceStats';
 
 type NavProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList>,
   NativeStackNavigationProp<RootStackParamList>
 >;
-
-const RECENT = [
-  { mon: 'JUN', day: '24', weekday: 'Tuesday',  clockIn: '09:02', clockOut: '17:34', hours: '8.5h', status: 'On time', statusColor: '#1F8A5B' },
-  { mon: 'JUN', day: '23', weekday: 'Monday',   clockIn: '09:11', clockOut: '17:40', hours: '8.5h', status: 'Late',    statusColor: '#C77A1E' },
-  { mon: 'JUN', day: '20', weekday: 'Friday',   clockIn: '08:54', clockOut: '16:30', hours: '7.6h', status: 'On time', statusColor: '#1F8A5B' },
-];
 
 function greeting() {
   const h = new Date().getHours();
@@ -38,6 +33,18 @@ export default function HomeScreen() {
   const nav = useNavigation<NavProp>();
   const insets = useSafeAreaInsets();
   const { user, clockedIn, clockInTime, clockOut } = useApp();
+  const [weekRecords, setWeekRecords] = useState<AttendanceRecord[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    fetchAttendanceHistory(user.id, 10)
+      .then((records) => setWeekRecords(records.filter((r) => isOnOrAfter(r.date, startOfWeek()))))
+      .catch(() => {});
+  }, [user?.id, clockedIn]);
+
+  const hrsThisWeek = sumHours(weekRecords);
+  const daysPresent = Math.min(weekRecords.length, 5);
+  const onTimePct = onTimeRate(weekRecords);
 
   const handleClockOut = async () => {
     if (!user) return;
@@ -106,15 +113,15 @@ export default function HomeScreen() {
 
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>32.5</Text>
+            <Text style={styles.statValue}>{hrsThisWeek.toFixed(1)}</Text>
             <Text style={styles.statLabel}>hrs / week</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>4<Text style={styles.statOf}>/5</Text></Text>
+            <Text style={styles.statValue}>{daysPresent}<Text style={styles.statOf}>/5</Text></Text>
             <Text style={styles.statLabel}>days present</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={[styles.statValue, { color: COLORS.green }]}>96%</Text>
+            <Text style={[styles.statValue, { color: COLORS.green }]}>{onTimePct != null ? `${onTimePct}%` : '—'}</Text>
             <Text style={styles.statLabel}>on time</Text>
           </View>
         </View>
@@ -125,24 +132,30 @@ export default function HomeScreen() {
             <Text style={styles.seeAll}>See all</Text>
           </TouchableOpacity>
         </View>
-        <View style={styles.listCard}>
-          {RECENT.map((item, idx) => (
-            <TouchableOpacity key={idx} style={[styles.listRow, idx === 0 && { borderTopWidth: 0 }]} onPress={() => nav.navigate('History')} activeOpacity={0.7}>
-              <View style={styles.dateBadge}>
-                <Text style={styles.dateMon}>{item.mon}</Text>
-                <Text style={styles.dateDay}>{item.day}</Text>
-              </View>
-              <View style={styles.listMid}>
-                <Text style={styles.weekday}>{item.weekday}</Text>
-                <Text style={styles.times}>{item.clockIn} – {item.clockOut}</Text>
-              </View>
-              <View style={styles.listRight}>
-                <Text style={styles.hours}>{item.hours}</Text>
-                <Text style={[styles.statusChip, { color: item.statusColor }]}>{item.status}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {weekRecords.length === 0 ? (
+          <View style={styles.listCard}>
+            <Text style={styles.emptyText}>No attendance recorded yet this week.</Text>
+          </View>
+        ) : (
+          <View style={styles.listCard}>
+            {weekRecords.map(toDisplayRecord).map((item, idx) => (
+              <TouchableOpacity key={item.id} style={[styles.listRow, idx === 0 && { borderTopWidth: 0 }]} onPress={() => nav.navigate('History')} activeOpacity={0.7}>
+                <View style={styles.dateBadge}>
+                  <Text style={styles.dateMon}>{item.mon}</Text>
+                  <Text style={styles.dateDay}>{item.day}</Text>
+                </View>
+                <View style={styles.listMid}>
+                  <Text style={styles.weekday}>{item.weekday}</Text>
+                  <Text style={styles.times}>{item.clockIn} – {item.clockOut}</Text>
+                </View>
+                <View style={styles.listRight}>
+                  <Text style={styles.hours}>{item.hours}</Text>
+                  <Text style={[styles.statusChip, { color: item.statusColor }]}>{item.status}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -191,6 +204,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 17, fontFamily: 'PlusJakartaSans_700Bold', color: COLORS.dark },
   seeAll: { fontSize: 14, fontFamily: 'PlusJakartaSans_600SemiBold', color: COLORS.primary },
   listCard: { backgroundColor: '#fff', borderRadius: 20, borderWidth: 1, borderColor: COLORS.border, overflow: 'hidden' },
+  emptyText: { padding: 20, textAlign: 'center', fontSize: 13, color: COLORS.muted, fontFamily: 'PlusJakartaSans_400Regular' },
   listRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 15, paddingHorizontal: 18, borderTopWidth: 1, borderTopColor: COLORS.borderLight },
   dateBadge: { width: 42, height: 42, borderRadius: 13, backgroundColor: COLORS.primaryLight, alignItems: 'center', justifyContent: 'center' },
   dateMon: { fontSize: 10, fontFamily: 'PlusJakartaSans_700Bold', color: COLORS.primary, textTransform: 'uppercase', letterSpacing: 0.5 },

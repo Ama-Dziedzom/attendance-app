@@ -21,6 +21,13 @@
     "web": {
       "bundler": "metro"
     },
-    "plugins": ["./plugins/withoutPushEntitlement"]
+    "plugins": [
+      "./plugins/withoutPushEntitlement"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "e5a29cc0-326a-40b2-bca2-c5884d62fbad"
+      }
+    }
   }
 }
